@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WeDiary</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #fdf2f8; margin: 0; padding: 0; line-height: 1.6; }
+        header { background: #ec4899; color: white; padding: 1rem; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .container { max-width: 700px; margin: 2rem auto; padding: 1rem; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+        input, textarea { width: 90%; padding: 0.8rem; margin: 0.5rem 0; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem; box-sizing: border-box; }
+        .button, .small-btn { transition: transform 0.2s, opacity 0.2s; }
+        .button { display: inline-block; background: #ec4899; color: white; padding: 0.6rem 1.2rem; border-radius: 999px; font-size: 1rem; cursor: pointer; border: none; margin-top: 1rem; }
+        .button:hover { opacity: 0.9; transform: translateY(-2px); }
+        .logout { background: #ef4444; }
+        .hidden { display: none; }
+        #profileSection { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); padding: 2rem; margin-bottom: 2rem; text-align: center; position: relative; }
+        .profile-image { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 4px solid #ec4899; }
+        .edit-profile-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #aaa; cursor: pointer; }
+        .edit-profile-btn:hover { color: #ec4899; }
+        .entry { background: repeating-linear-gradient(to bottom, #fff 0px, #fff 23px, #fce7f3 24px); border-radius: 12px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); padding: 1.5rem; margin-bottom: 1rem; text-align: left; }
+        .time { font-size: 0.8rem; color: gray; margin-top: 0.5rem; }
+        .actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .small-btn { padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; border: none; cursor: pointer; }
+        .small-btn.edit { background: #3b82f6; color: white; }
+        .small-btn.delete { background: #ef4444; color: white; }
+        .reaction { margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .love-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; transition: transform 0.2s; }
+        .love-btn:hover { transform: scale(1.2); }
+        .entry img, .entry video { max-width: 100%; max-height: 350px; border-radius: 10px; margin-top: 0.5rem; display: block; object-fit: cover; }
+        .comments { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+        .comment { max-width: 70%; padding: 0.6rem 1rem; border-radius: 15px; font-size: 0.9rem; position: relative; word-wrap: break-word; }
+        .comment.you { background: #dbeafe; align-self: flex-end; border-bottom-right-radius: 5px; }
+        .comment.partner { background: #fce7f3; align-self: flex-start; border-bottom-left-radius: 5px; }
+        .comment span { display: block; }
+        .comment small { font-size: 0.75rem; color: #666; margin-left: 0.5rem; }
+        .comment button { position: absolute; top: -6px; right: -6px; background: #ef4444; border: none; border-radius: 50%; color: white; font-size: 0.7rem; padding: 2px 5px; cursor: pointer; }
+        #entryForm .media-preview { margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <header><h1>📖 WeDiary</h1></header>
+
+    <div id="loginPage" class="container">
+        <div class="card">
+            <h2>🔒 Masuk ke WeDiary</h2>
+            <input type="password" id="token1" placeholder="Token Kamu" required />
+            <input type="password" id="token2" placeholder="Token Pasangan" required />
+            <button class="button" onclick="login()">Masuk</button>
+            <p id="loginError" style="color:red; display:none; margin-top:1rem;">Token salah, coba lagi!</p>
+        </div>
+    </div>
+
+    <div id="diaryPage" class="container hidden">
+        <div id="profileSection">
+            <img src="https://via.placeholder.com/150" class="profile-image" id="profileImage">
+            <h3 id="profileName">Pasanganmu</h3>
+            <p>Bersama sejak <span id="datingDate"></span></p>
+            <button class="small-btn edit-profile-btn" onclick="toggleEditProfile()">✏️</button>
+        </div>
+
+        <form id="editProfileForm" class="card hidden" onsubmit="saveProfile(event)">
+            <h2>✍️ Edit Profil</h2>
+            <input type="text" id="editName" placeholder="Nama Pasangan" required />
+            <input type="text" id="editDatingDate" placeholder="Tanggal Jadian (DD-MM-YYYY)" required />
+            <p>Pilih Foto Baru:</p>
+            <input type="file" id="editPhoto" accept="image/*" />
+            <button type="submit" class="button">Simpan Perubahan</button>
+        </form>
+
+        <button class="button" onclick="toggleForm()">+ Tambah Entry</button>
+        <button class="button logout" onclick="logout()">🚪 Logout</button>
+
+        <form id="entryForm" onsubmit="addEntry(event)" class="hidden card">
+            <h2>✍️ Tulis Entri</h2>
+            <input type="text" id="mood" placeholder="Mood (😊 / 😢 / 😍)" required />
+            <input type="text" id="title" placeholder="Judul" required />
+            <textarea id="content" placeholder="Tulis ceritamu di sini..." rows="4" required></textarea>
+            <input type="file" id="media" accept="image/*,video/*" />
+            <div id="mediaPreview" class="media-preview hidden"></div>
+            <button type="submit" class="button">Simpan Entry</button>
+            <button type="button" class="button logout" onclick="cancelEdit()">Batal</button>
+        </form>
+
+        <div id="entries"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://fysptdalfoklfvihimfv.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c3B0ZGFsZm9rbGZ2aWhpbWZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MTU0NjcsImV4cCI6MjA3NDE5MTQ2N30.wOE0br4Wwb36AjFmLyybksO_TyB64guNg0c2z85kAe4';
+
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let editingIndex = null;
+        let currentUser = null;
+
+        async function loadEntries() {
+            try {
+                const { data, error } = await client
+                    .from('entries')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    throw error;
+                }
+                return data || [];
+            } catch (e) {
+                console.error("Gagal memuat entri dari Supabase:", e.message);
+                return [];
+            }
+        }
+
+        async function saveEntry(entryData) {
+            try {
+                const { data, error } = await client
+                    .from('entries')
+                    .insert(entryData);
+
+                if (error) {
+                    throw error;
+                }
+                console.log('Entri berhasil disimpan:', data);
+                return data;
+            } catch (e) {
+                console.error("Gagal menyimpan entri ke Supabase:", e.message);
+                alert("Penyimpanan gagal! Coba cek koneksi atau kodenya.");
+                return null;
+            }
+        }
+
+        async function updateEntry(id, entryData) {
+            try {
+                const { data, error } = await client
+                    .from('entries')
+                    .update(entryData)
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
+                }
+                console.log('Entri berhasil diperbarui:', data);
+                return data;
+            } catch (e) {
+                console.error("Gagal memperbarui entri ke Supabase:", e.message);
+                return null;
+            }
+        }
+
+        async function deleteEntryFromDB(id) {
+            try {
+                const { error } = await client
+                    .from('entries')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    throw error;
+                }
+                console.log('Entri berhasil dihapus.');
+                return true;
+            } catch (e) {
+                console.error("Gagal menghapus entri dari Supabase:", e.message);
+                return false;
+            }
+        }
+
+        async function addCommentToDB(entryId, comments) {
+            try {
+                const { data, error } = await client
+                    .from('entries')
+                    .update({ comments: comments })
+                    .eq('id', entryId);
+
+                if (error) {
+                    throw error;
+                }
+                console.log('Komentar berhasil ditambahkan:', data);
+                return data;
+            } catch (e) {
+                console.error("Gagal menambahkan komentar ke Supabase:", e.message);
+                return null;
+            }
+        }
+
+        async function updateLoveCount(entryId, newLoveCount) {
+            try {
+                const { data, error } = await client
+                    .from('entries')
+                    .update({ loves: newLoveCount })
+                    .eq('id', entryId);
+
+                if (error) {
+                    throw error;
+                }
+                console.log('Love count berhasil diperbarui:', data);
+                return data;
+            } catch (e) {
+                console.error("Gagal memperbarui love count:", e.message);
+                return null;
+            }
+        }
+
+        // --- Fungsi yang Memanggil Supabase ---
+
+        async function renderEntries() {
+            const entries = await loadEntries();
+            const container = document.getElementById("entries");
+            container.innerHTML = "";
+
+            entries.forEach(entry => {
+                const commentsHTML = entry.comments.map(c => {
+                    const label = c.author === "you" ? `💙` : `💖`;
+                    const cls = c.author === "you" ? "you" : "partner";
+                    const deleteBtn = c.author === currentUser ? `<button onclick="deleteComment('${entry.id}', '${c.id}')">x</button>` : '';
+                    return `<div class="comment ${cls}"><span><b>${label}:</b> ${c.text} <br> <small>${c.time}</small></span>${deleteBtn}</div>`;
+                }).join("");
+
+                const mediaHTML = entry.media ? `<div class="media">${entry.media}</div>` : '';
+                const actionsHTML = `
+                    <div class="actions">
+                        <button class="small-btn edit" onclick="editEntry('${entry.id}')">Edit</button>
+                        <button class="small-btn delete" onclick="deleteEntry('${entry.id}')">Hapus</button>
+                    </div>
+                `;
+
+                container.insertAdjacentHTML("beforeend", `
+                    <div class="entry">
+                        <h3>${entry.mood} ${entry.title}</h3>
+                        <p>${entry.content}</p>
+                        ${mediaHTML}
+                        <p class="time">${entry.date} — ${entry.time} 🔒 Private</p>
+                        ${entry.author === currentUser ? actionsHTML : ''}
+                        <div class="reaction">
+                            <button class="love-btn" onclick="loveEntry('${entry.id}', ${entry.loves})">❤️</button> ${entry.loves} Love
+                        </div>
+                        <div class="comments">
+                            ${commentsHTML}
+                            <form onsubmit="addComment(event, '${entry.id}')">
+                                <input type="text" placeholder="Tulis komentar..." required />
+                                <button class="small-btn" type="submit">Kirim</button>
+                            </form>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        async function addEntry(event) {
+            event.preventDefault();
+            const mood = document.getElementById("mood").value.trim();
+            const title = document.getElementById("title").value.trim();
+            const content = document.getElementById("content").value.trim();
+            const fileInput = document.getElementById("media");
+            const file = fileInput.files[0];
+
+            const now = new Date();
+            const date = now.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+            const time = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+            const processEntry = async (mediaHTML) => {
+                const entryData = {
+                    mood,
+                    title,
+                    content,
+                    media: mediaHTML,
+                    date,
+                    time,
+                    loves: 0,
+                    comments: [],
+                    author: currentUser
+                };
+
+                if (editingIndex !== null) {
+                    await updateEntry(editingIndex, entryData);
+                    editingIndex = null;
+                } else {
+                    await saveEntry(entryData);
+                }
+
+                renderEntries();
+                document.getElementById("entryForm").classList.add("hidden");
+                document.getElementById("entryForm").reset();
+                document.getElementById("mediaPreview").innerHTML = "";
+                document.getElementById("mediaPreview").classList.add("hidden");
+            };
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async function (e) {
+                    let mediaHTML = "";
+                    if (file.type.startsWith("image/")) {
+                        mediaHTML = `<img src="${e.target.result}" alt="Gambar" />`;
+                    } else if (file.type.startsWith("video/")) {
+                        mediaHTML = `<video src="${e.target.result}" controls></video>`;
+                    }
+                    await processEntry(mediaHTML);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                const mediaPreviewHTML = document.getElementById("mediaPreview").innerHTML;
+                let existingMediaHTML = "";
+                if (mediaPreviewHTML && mediaPreviewHTML.indexOf('Hapus Media') > -1) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(mediaPreviewHTML, 'text/html');
+                    const mediaElement = doc.querySelector('img, video');
+                    if (mediaElement) {
+                        existingMediaHTML = mediaElement.outerHTML;
+                    }
+                }
+                await processEntry(existingMediaHTML);
+            }
+        }
+        
+        async function deleteEntry(id) {
+            if (confirm("Yakin mau hapus entry ini?")) {
+                await deleteEntryFromDB(id);
+                renderEntries();
+            }
+        }
+        
+        async function loveEntry(entryId, currentLoves) {
+            const newLoveCount = currentLoves + 1;
+            await updateLoveCount(entryId, newLoveCount);
+            renderEntries();
+        }
+
+        async function addComment(event, entryId) {
+            event.preventDefault();
+            const input = event.target.querySelector("input");
+            if (input.value.trim() === "") return;
+
+            const entries = await loadEntries();
+            const entry = entries.find(e => e.id === entryId);
+            if (!entry) return;
+
+            const now = new Date();
+            const time = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+            
+            // Tambahkan ID ke komentar untuk memudahkan penghapusan
+            const newComment = { id: Date.now(), text: input.value, author: currentUser, time: time };
+            entry.comments.push(newComment);
+            
+            await addCommentToDB(entryId, entry.comments);
+            renderEntries();
+            input.value = "";
+        }
+        
+        async function deleteComment(entryId, commentId) {
+            if (confirm("Yakin mau hapus komentar ini?")) {
+                const entries = await loadEntries();
+                const entry = entries.find(e => e.id === entryId);
+                if (!entry) return;
+                
+                entry.comments = entry.comments.filter(c => c.id != commentId);
+                
+                await addCommentToDB(entryId, entry.comments);
+                renderEntries();
+            }
+        }
+
+        function toggleEditProfile() {
+            // ... (Tidak ada perubahan)
+        }
+
+        function saveProfile(event) {
+            // ... (Tidak ada perubahan)
+        }
+        
+        function getTokens() {
+            const saved = JSON.parse(localStorage.getItem("diaryTokens"));
+            return saved || { user: "208", partner: "303" };
+        }
+        
+        function getProfileData() {
+            // ... (Tidak ada perubahan)
+        }
+        
+        function saveProfileData(profileData) {
+            // ... (Tidak ada perubahan)
+        }
+
+        function cancelEdit() {
+            // ... (Tidak ada perubahan)
+        }
+        
+        function removeMedia() {
+            // ... (Tidak ada perubahan)
+        }
+
+        async function login() {
+            const { user, partner } = getTokens();
+            const t1 = document.getElementById("token1").value;
+            const t2 = document.getElementById("token2").value;
+
+            if (t1 === user && t2 === partner) {
+                currentUser = "you";
+            } else if (t1 === partner && t2 === user) {
+                currentUser = "partner";
+            } else {
+                document.getElementById("loginError").style.display = "block";
+                return;
+            }
+
+            localStorage.setItem("currentUser", currentUser);
+            document.getElementById("loginPage").classList.add("hidden");
+            document.getElementById("diaryPage").classList.remove("hidden");
+            renderProfile();
+            await renderEntries();
+        }
+        
+        function logout() {
+            localStorage.removeItem("currentUser");
+            document.getElementById("diaryPage").classList.add("hidden");
+            document.getElementById("loginPage").classList.remove("hidden");
+            document.getElementById("token1").value = "";
+            document.getElementById("token2").value = "";
+            document.getElementById("editProfileForm").classList.add("hidden");
+        }
+        
+        async function checkLoginStatus() {
+            const savedUser = localStorage.getItem("currentUser");
+            if (savedUser) {
+                currentUser = savedUser;
+                document.getElementById("loginPage").classList.add("hidden");
+                document.getElementById("diaryPage").classList.remove("hidden");
+                renderProfile();
+                await renderEntries();
+            }
+        }
+        
+        document.addEventListener("DOMContentLoaded", checkLoginStatus);
+
+    </script>
+</body>
+</html>
