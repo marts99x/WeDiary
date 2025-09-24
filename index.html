@@ -7,20 +7,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Poppins', sans-serif; background: #fdf2f8; margin: 0; padding: 0; line-height: 1.6; }
-    header { background: #ec4899; color: white; padding: 1rem; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+    header { background: #ec4899; color: white; padding: 1rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .container { max-width: 700px; margin: 2rem auto; padding: 1rem; }
-    .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+    .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     input, textarea { width: 90%; padding: 0.8rem; margin: 0.5rem 0; border-radius: 8px; border: 1px solid #ddd; font-size: 1rem; box-sizing: border-box; }
     .button, .small-btn { transition: transform 0.2s, opacity 0.2s; }
     .button { display: inline-block; background: #ec4899; color: white; padding: 0.6rem 1.2rem; border-radius: 999px; font-size: 1rem; cursor: pointer; border: none; margin-top: 1rem; }
     .button:hover { opacity: 0.9; transform: translateY(-2px); }
     .logout { background: #ef4444; }
     .hidden { display: none; }
-    #profileSection { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); padding: 2rem; margin-bottom: 2rem; text-align: center; position: relative; }
+    #profileSection { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 2rem; margin-bottom: 2rem; text-align: center; position: relative; }
     .profile-image { width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 4px solid #ec4899; }
     .edit-profile-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #aaa; cursor: pointer; }
     .edit-profile-btn:hover { color: #ec4899; }
-    .entry { background: repeating-linear-gradient(to bottom, #fff 0px, #fff 23px, #fce7f3 24px); border-radius: 12px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); padding: 1.5rem; margin-bottom: 1rem; text-align: left; }
+    .entry { background: repeating-linear-gradient(to bottom, #fff 0px, #fff 23px, #fce7f3 24px); border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1rem; text-align: left; }
     .time { font-size: 0.8rem; color: gray; margin-top: 0.5rem; }
     .actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
     .small-btn { padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; border: none; cursor: pointer; }
@@ -43,7 +43,6 @@
 <body>
   <header><h1>📖 WeDiary</h1></header>
 
-  <!-- Login -->
   <div id="loginPage" class="container">
     <div class="card">
       <h2>🔒 Masuk ke WeDiary</h2>
@@ -54,7 +53,6 @@
     </div>
   </div>
 
-  <!-- Diary -->
   <div id="diaryPage" class="container hidden">
     <div id="profileSection">
       <img src="https://via.placeholder.com/150" class="profile-image" id="profileImage">
@@ -96,100 +94,101 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5c3B0ZGFsZm9rbGZ2aWhpbWZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MTU0NjcsImV4cCI6MjA3NDE5MTQ2N30.wOE0br4Wwb36AjFmLyybksO_TyB64guNg0c2z85kAe4";
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    let editingId = null;
     let currentUser = null;
+    let editingIndex = null;
 
-    // ===== Profile (masih localStorage, bisa dipindah ke supabase kalau perlu) =====
-    function getProfileData() {
-      const saved = JSON.parse(localStorage.getItem("diaryProfile"));
-      return saved || { photoUrl: "https://via.placeholder.com/150", name: "Beb", datingDate: "14-02-2023" };
+    // 🔹 Tokens default
+    function getTokens() {
+      return { user: "208", partner: "303" };
     }
-    function saveProfileData(profile) { localStorage.setItem("diaryProfile", JSON.stringify(profile)); }
-    function renderProfile() {
-      const profile = getProfileData();
-      document.getElementById("profileImage").src = profile.photoUrl;
+
+    // 🔹 Profile
+    async function getProfileData() {
+      const { data, error } = await db.from("profiles").select("*").limit(1).single();
+      if (error || !data) {
+        return { photo_url: "https://via.placeholder.com/150", name: "Beb", dating_date: "14-02-2023" };
+      }
+      return data;
+    }
+
+    async function renderProfile() {
+      const profile = await getProfileData();
+      document.getElementById("profileImage").src = profile.photo_url;
       document.getElementById("profileName").innerText = profile.name;
-      const parts = profile.datingDate.split("-");
+      const parts = profile.dating_date.split("-");
       const startDate = new Date(parts[2], parts[1] - 1, parts[0]);
-      const diffDays = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
-      document.getElementById("datingDate").innerText = `${profile.datingDate} • ${diffDays} hari bersama 💕`;
+      const diffDays = Math.floor((new Date() - startDate) / (1000*60*60*24));
+      document.getElementById("datingDate").innerText = `${profile.dating_date} • ${diffDays} hari bersama 💕`;
     }
-    function toggleEditProfile() {
-      const profile = getProfileData();
-      document.getElementById("editName").value = profile.name;
-      document.getElementById("editDatingDate").value = profile.datingDate;
-      document.getElementById("editProfileForm").classList.toggle("hidden");
-    }
-    function saveProfile(e) {
+
+    async function saveProfile(e) {
       e.preventDefault();
       const newName = document.getElementById("editName").value;
       const newDate = document.getElementById("editDatingDate").value;
       const newPhotoFile = document.getElementById("editPhoto").files[0];
-      const profile = getProfileData();
-      const update = (url) => { profile.name = newName; profile.datingDate = newDate; profile.photoUrl = url; saveProfileData(profile); renderProfile(); toggleEditProfile(); };
-      if (newPhotoFile) { const r = new FileReader(); r.onload = e => update(e.target.result); r.readAsDataURL(newPhotoFile); }
-      else update(profile.photoUrl);
+
+      const finishSave = async (url) => {
+        const { data: existing } = await db.from("profiles").select("*").limit(1).single();
+        if (existing) {
+          await db.from("profiles").update({ name: newName, dating_date: newDate, photo_url: url }).eq("id", existing.id);
+        } else {
+          await db.from("profiles").insert({ name: newName, dating_date: newDate, photo_url: url });
+        }
+        renderProfile();
+        toggleEditProfile();
+      };
+
+      if (newPhotoFile) {
+        const r = new FileReader();
+        r.onload = e => finishSave(e.target.result);
+        r.readAsDataURL(newPhotoFile);
+      } else {
+        const { data: existing } = await db.from("profiles").select("*").limit(1).single();
+        finishSave(existing?.photo_url || "https://via.placeholder.com/150");
+      }
     }
 
-    // ===== Auth sederhana =====
-    function getTokens() { return { user: "208", partner: "303" }; }
-    function login() {
-      const { user, partner } = getTokens();
-      const t1 = document.getElementById("token1").value, t2 = document.getElementById("token2").value;
-      if (t1 === user && t2 === partner) currentUser = "you";
-      else if (t1 === partner && t2 === user) currentUser = "partner";
-      else { document.getElementById("loginError").style.display = "block"; return; }
-      localStorage.setItem("currentUser", currentUser);
-      document.getElementById("loginPage").classList.add("hidden");
-      document.getElementById("diaryPage").classList.remove("hidden");
-      renderProfile(); renderEntries();
-    }
-    function logout() {
-      localStorage.removeItem("currentUser");
-      document.getElementById("diaryPage").classList.add("hidden");
-      document.getElementById("loginPage").classList.remove("hidden");
-    }
-    function checkLoginStatus() {
-      const savedUser = localStorage.getItem("currentUser");
-      if (savedUser) { currentUser = savedUser; document.getElementById("loginPage").classList.add("hidden"); document.getElementById("diaryPage").classList.remove("hidden"); renderProfile(); renderEntries(); }
+    function toggleEditProfile() {
+      document.getElementById("editProfileForm").classList.toggle("hidden");
     }
 
-    // ===== Supabase CRUD =====
+    // 🔹 Entries
     async function loadEntries() {
       const { data, error } = await db.from("entries").select("*").order("id", { ascending: false });
       if (error) { console.error(error); return []; }
-      return data || [];
+      return data;
     }
-    async function saveEntry(entry) {
-      if (editingId) {
-        await db.from("entries").update(entry).eq("id", editingId);
-        editingId = null;
-      } else {
-        await db.from("entries").insert(entry);
-      }
-    }
-    async function deleteEntryFromDB(id) { await db.from("entries").delete().eq("id", id); }
 
-    // ===== Entry functions =====
     async function renderEntries() {
       const entries = await loadEntries();
       const container = document.getElementById("entries");
       container.innerHTML = "";
-      entries.forEach(entry => {
-        const commentsHTML = (entry.comments || []).map((c,i) => {
-          const label = c.author === "you" ? "💙" : "💖";
+
+      entries.forEach((entry) => {
+        const commentsHTML = (entry.comments || []).map((c, i) => {
+          const label = c.author === "you" ? `💙` : `💖`;
           const cls = c.author === "you" ? "you" : "partner";
-          const del = c.author === currentUser ? `<button onclick="deleteComment(${entry.id}, ${i})">x</button>` : "";
-          return `<div class="comment ${cls}"><span><b>${label}:</b> ${c.text} <br><small>${c.time}</small></span>${del}</div>`;
+          const deleteBtn = c.author === currentUser ? `<button onclick="deleteComment(${entry.id}, ${i})">x</button>` : '';
+          return `<div class="comment ${cls}"><span><b>${label}:</b> ${c.text} <br><small>${c.time}</small></span>${deleteBtn}</div>`;
         }).join("");
+
+        const mediaHTML = entry.media || "";
+        const actionsHTML = entry.author === currentUser ? `
+          <div class="actions">
+            <button class="small-btn edit" onclick="editEntry(${entry.id})">Edit</button>
+            <button class="small-btn delete" onclick="deleteEntry(${entry.id})">Hapus</button>
+          </div>` : "";
+
         container.insertAdjacentHTML("beforeend", `
           <div class="entry">
             <h3>${entry.mood} ${entry.title}</h3>
             <p>${entry.content}</p>
-            ${entry.media || ""}
+            ${mediaHTML}
             <p class="time">${entry.date} — ${entry.time} 🔒 Private</p>
-            ${entry.author === currentUser ? `<div class="actions"><button class="small-btn edit" onclick="editEntry(${entry.id})">Edit</button><button class="small-btn delete" onclick="deleteEntry(${entry.id})">Hapus</button></div>` : ""}
-            <div class="reaction"><button class="love-btn" onclick="loveEntry(${entry.id}, ${entry.loves||0})">❤️</button> ${entry.loves||0} Love</div>
+            ${actionsHTML}
+            <div class="reaction">
+              <button class="love-btn" onclick="loveEntry(${entry.id})">❤️</button> ${entry.loves} Love
+            </div>
             <div class="comments">
               ${commentsHTML}
               <form onsubmit="addComment(event, ${entry.id})">
@@ -202,47 +201,130 @@
       });
     }
 
-    function toggleForm(id=null) { document.getElementById("entryForm").classList.remove("hidden"); editingId=id; if (!id) document.getElementById("entryForm").reset(); }
-    function cancelEdit() { document.getElementById("entryForm").classList.add("hidden"); editingId=null; document.getElementById("entryForm").reset(); }
-
     async function addEntry(e) {
       e.preventDefault();
-      const mood = document.getElementById("mood").value, title = document.getElementById("title").value, content = document.getElementById("content").value;
+      const mood = document.getElementById("mood").value;
+      const title = document.getElementById("title").value;
+      const content = document.getElementById("content").value;
       const file = document.getElementById("media").files[0];
       const now = new Date();
-      const date = now.toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"});
-      const time = now.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});
-      const finish = async(mediaHTML) => {
-        const entry = { mood, title, content, media: mediaHTML, date, time, loves:0, comments:[], author:currentUser };
-        await saveEntry(entry); document.getElementById("entryForm").classList.add("hidden"); document.getElementById("entryForm").reset(); renderEntries();
+      const date = now.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+      const time = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+      const finishInsert = async (mediaHTML) => {
+        await db.from("entries").insert([{ mood, title, content, media: mediaHTML, date, time, loves: 0, comments: [], author: currentUser }]);
+        document.getElementById("entryForm").classList.add("hidden");
+        document.getElementById("entryForm").reset();
+        renderEntries();
       };
-      if (file) { const r = new FileReader(); r.onload = e => finish(file.type.startsWith("image/")?`<img src="${e.target.result}"/>`:`<video src="${e.target.result}" controls></video>`); r.readAsDataURL(file); }
-      else finish("");
+
+      if (file) {
+        const r = new FileReader();
+        r.onload = e => {
+          let mediaHTML = "";
+          if (file.type.startsWith("image/")) mediaHTML = `<img src="${e.target.result}" />`;
+          else if (file.type.startsWith("video/")) mediaHTML = `<video src="${e.target.result}" controls></video>`;
+          finishInsert(mediaHTML);
+        };
+        r.readAsDataURL(file);
+      } else {
+        finishInsert("");
+      }
     }
+
     async function editEntry(id) {
       const { data } = await db.from("entries").select("*").eq("id", id).single();
       if (!data) return;
-      toggleForm(id);
+      editingIndex = id;
+      const form = document.getElementById("entryForm");
+      form.classList.remove("hidden");
       document.getElementById("mood").value = data.mood;
       document.getElementById("title").value = data.title;
       document.getElementById("content").value = data.content;
-    }
-    async function deleteEntry(id) { if (confirm("Yakin mau hapus?")) { await deleteEntryFromDB(id); renderEntries(); } }
-    async function loveEntry(id, loves) { await db.from("entries").update({ loves: loves+1 }).eq("id", id); renderEntries(); }
-    async function addComment(e, id) {
-      e.preventDefault(); const input = e.target.querySelector("input");
-      const now = new Date(), time = now.toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});
-      const { data } = await db.from("entries").select("comments").eq("id", id).single();
-      const comments = data.comments || []; comments.push({ text: input.value, time, author: currentUser });
-      await db.from("entries").update({ comments }).eq("id", id); input.value=""; renderEntries();
-    }
-    async function deleteComment(id, index) {
-      const { data } = await db.from("entries").select("comments").eq("id", id).single();
-      const comments = data.comments || []; comments.splice(index, 1);
-      await db.from("entries").update({ comments }).eq("id", id); renderEntries();
+      document.getElementById("mediaPreview").innerHTML = data.media;
     }
 
-    checkLoginStatus();
+    async function deleteEntry(id) {
+      if (confirm("Yakin mau hapus entry ini?")) {
+        await db.from("entries").delete().eq("id", id);
+        renderEntries();
+      }
+    }
+
+    async function loveEntry(id) {
+      const { data } = await db.from("entries").select("loves").eq("id", id).single();
+      const loves = (data?.loves || 0) + 1;
+      await db.from("entries").update({ loves }).eq("id", id);
+      renderEntries();
+    }
+
+    async function addComment(e, id) {
+      e.preventDefault();
+      const input = e.target.querySelector("input");
+      const { data } = await db.from("entries").select("comments").eq("id", id).single();
+      const comments = data.comments || [];
+      const now = new Date();
+      const time = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      comments.push({ text: input.value, author: currentUser, time });
+      await db.from("entries").update({ comments }).eq("id", id);
+      input.value = "";
+      renderEntries();
+    }
+
+    async function deleteComment(id, index) {
+      const { data } = await db.from("entries").select("comments").eq("id", id).single();
+      const comments = data.comments || [];
+      comments.splice(index, 1);
+      await db.from("entries").update({ comments }).eq("id", id);
+      renderEntries();
+    }
+
+    // 🔹 Login
+    function login() {
+      const { user, partner } = getTokens();
+      const t1 = document.getElementById("token1").value;
+      const t2 = document.getElementById("token2").value;
+
+      if (t1 === user && t2 === partner) currentUser = "you";
+      else if (t1 === partner && t2 === user) currentUser = "partner";
+      else {
+        document.getElementById("loginError").style.display = "block";
+        return;
+      }
+
+      localStorage.setItem("currentUser", currentUser);
+      document.getElementById("loginPage").classList.add("hidden");
+      document.getElementById("diaryPage").classList.remove("hidden");
+      renderProfile();
+      renderEntries();
+    }
+
+    function logout() {
+      localStorage.removeItem("currentUser");
+      location.reload();
+    }
+
+    function toggleForm() {
+      document.getElementById("entryForm").classList.toggle("hidden");
+    }
+
+    function cancelEdit() {
+      editingIndex = null;
+      document.getElementById("entryForm").classList.add("hidden");
+      document.getElementById("entryForm").reset();
+    }
+
+    // 🔹 Auto login
+    window.onload = () => {
+      const saved = localStorage.getItem("currentUser");
+      if (saved) {
+        currentUser = saved;
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("diaryPage").classList.remove("hidden");
+        renderProfile();
+        renderEntries();
+      }
+    };
   </script>
 </body>
 </html>
