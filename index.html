@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -22,6 +21,11 @@
     .edit-profile-btn { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #aaa; cursor: pointer; }
     .edit-profile-btn:hover { color: #ec4899; }
     .entry { background: repeating-linear-gradient(to bottom, #fff 0px, #fff 23px, #fce7f3 24px); border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); padding: 1.5rem; margin-bottom: 1rem; text-align: left; }
+    .entry p {
+      text-align: justify;       /* Rata kiri kanan */
+      white-space: pre-wrap;     /* Enter dari textarea muncul */
+      margin-bottom: 1rem;       /* Spasi antar paragraf */
+    }
     .time { font-size: 0.8rem; color: gray; margin-top: 0.5rem; }
     .actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
     .small-btn { padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.8rem; border: none; cursor: pointer; }
@@ -98,12 +102,10 @@
     let currentUser = null;
     let editingIndex = null;
 
-    // 🔹 Tokens default
     function getTokens() {
       return { user: "20825", partner: "30309" };
     }
 
-    // 🔹 Profile
     async function getProfileData() {
       const { data, error } = await db.from("profiles").select("*").limit(1).single();
       if (error || !data) {
@@ -153,7 +155,6 @@
       document.getElementById("editProfileForm").classList.toggle("hidden");
     }
 
-    // 🔹 Entries
     async function loadEntries() {
       const { data, error } = await db.from("entries").select("*").order("id", { ascending: false });
       if (error) { console.error(error); return []; }
@@ -183,7 +184,7 @@
         container.insertAdjacentHTML("beforeend", `
           <div class="entry">
             <h3>${entry.mood} ${entry.title}</h3>
-            <p>${entry.content}</p>
+            <p>${entry.content.replace(/\n/g, '<br>')}</p>
             ${mediaHTML}
             <p class="time">${entry.date} — ${entry.time} 🔒 Private</p>
             ${actionsHTML}
@@ -280,7 +281,6 @@
       renderEntries();
     }
 
-    // 🔹 Login
     function login() {
       const { user, partner } = getTokens();
       const t1 = document.getElementById("token1").value;
@@ -293,7 +293,6 @@
         return;
       }
 
-      localStorage.setItem("currentUser", currentUser);
       document.getElementById("loginPage").classList.add("hidden");
       document.getElementById("diaryPage").classList.remove("hidden");
       renderProfile();
@@ -301,8 +300,9 @@
     }
 
     function logout() {
-      localStorage.removeItem("currentUser");
-      location.reload();
+      currentUser = null;
+      document.getElementById("loginPage").classList.remove("hidden");
+      document.getElementById("diaryPage").classList.add("hidden");
     }
 
     function toggleForm() {
@@ -310,23 +310,10 @@
     }
 
     function cancelEdit() {
-      editingIndex = null;
       document.getElementById("entryForm").classList.add("hidden");
       document.getElementById("entryForm").reset();
+      editingIndex = null;
     }
-
-    // 🔹 Auto login
-    window.onload = () => {
-      const saved = localStorage.getItem("currentUser");
-      if (saved) {
-        currentUser = saved;
-        document.getElementById("loginPage").classList.add("hidden");
-        document.getElementById("diaryPage").classList.remove("hidden");
-        renderProfile();
-        renderEntries();
-      }
-    };
   </script>
 </body>
 </html>
-
