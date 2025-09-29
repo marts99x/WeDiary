@@ -352,9 +352,20 @@
       editingIndex = null;
       document.getElementById("mediaPreview").innerHTML = "";
     }
-
+    // 🔹 Auto login
+    window.onload = () => {
+      const saved = localStorage.getItem("currentUser");
+      if (saved) {
+        currentUser = saved;
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("diaryPage").classList.remove("hidden");
+        renderProfile();
+        renderEntries();
+      }
+    };
     // initial (optional) — if you want to auto-render public view uncomment below:
     // renderProfile(); renderEntries();
   </script>
 </body>
 </html>
+
