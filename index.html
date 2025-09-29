@@ -321,6 +321,9 @@
         return;
       }
 
+      // ✅ simpan ke localStorage biar gak logout pas reload
+      localStorage.setItem("currentUser", currentUser);
+
       document.getElementById("loginPage").classList.add("hidden");
       document.getElementById("diaryPage").classList.remove("hidden");
       renderProfile();
@@ -329,9 +332,9 @@
 
     function logout() {
       currentUser = null;
+      localStorage.removeItem("currentUser"); // ✅ hapus session
       document.getElementById("loginPage").classList.remove("hidden");
       document.getElementById("diaryPage").classList.add("hidden");
-      // reset form & editing
       cancelEdit();
     }
 
@@ -368,4 +371,3 @@
   </script>
 </body>
 </html>
-
